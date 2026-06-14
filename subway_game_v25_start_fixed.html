@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>등굣길 자리잡기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-pro@latest/neodgm/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0a0a0a;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:center}
+#app{width:min(100vw,1440px);height:100dvh;max-width:1440px;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+
+/* ══ 헤더 ══ */
+.header{flex-shrink:0;background:#050508;border-bottom:2px solid #1a0800;position:relative;overflow:hidden}
+
+/* 탑승 전 */
+.hdr-boarding{display:flex;flex-direction:column;transition:opacity .4s,transform .4s}
+.hdr-boarding.hide{opacity:0;pointer-events:none;position:absolute;inset:0;transform:translateY(-8px)}
+
+.hb-route{padding:14px 48px 10px;display:flex;align-items:center;justify-content:center;gap:0}
+.hb-st{display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.35;flex-shrink:0}
+.hb-st.now{opacity:1}
+.hb-ko{font-family:'Inter',sans-serif;font-size:16px;font-weight:500;color:#777}
+.hb-st.now .hb-ko{font-size:36px;font-weight:700;color:#fff;letter-spacing:-.03em}
+.hb-en{font-family:'Inter',sans-serif;font-size:10px;color:#444}
+.hb-st.now .hb-en{font-size:11px;color:#666}
+.hb-seg{width:56px;height:1px;background:#222;margin:0 14px;flex-shrink:0;align-self:flex-start;margin-top:20px}
+.hb-arr{color:#f59e0b;font-size:13px;flex-shrink:0;align-self:flex-start;margin-top:19px;margin:19px 4px 0}
+
+/* 게임 중 */
+.hdr-game{display:flex;flex-direction:column;opacity:0;pointer-events:none;position:absolute;inset:0;transition:opacity .4s;overflow:hidden}
+.hdr-game.show{opacity:1;pointer-events:all;position:relative}
+.hg-inner{padding:10px 0 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.hg-row1{display:flex;align-items:baseline;gap:10px;justify-content:center}
+.hg-lbl{font-family:'NeoDunggeunmo',monospace;font-size:16px;color:#39ff85;opacity:.7;letter-spacing:.04em}
+.hg-st{font-family:'NeoDunggeunmo',monospace;font-size:30px;color:#39ff85;letter-spacing:.06em;text-shadow:0 0 10px rgba(57,255,133,.4);line-height:1}
+.hg-row2{display:flex;align-items:center;gap:8px;justify-content:center}
+.hg-arr{font-family:'NeoDunggeunmo',monospace;font-size:22px;color:#ff4444}
+.hg-door{font-family:'NeoDunggeunmo',monospace;font-size:22px;color:#39ff85;letter-spacing:.05em}
+
+/* 배너 공통 */
+.ticker-bar{height:44px;background:#030306;border-top:1px solid #0e0e14;overflow:hidden;display:flex;align-items:center;flex-shrink:0}
+.ticker-inner{white-space:nowrap;animation:tk 36s linear infinite;padding-left:100vw;font-family:'NeoDunggeunmo',monospace;font-size:20px;color:#f59e0b;letter-spacing:.06em}
+@keyframes tk{to{transform:translateX(-100%)}}
+
+/* ══ 메인 ══ */
+.main{flex:1;min-height:0;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;display:flex;min-height:0;opacity:0;pointer-events:none;transition:opacity .35s}
+.screen.on{opacity:1;pointer-events:all}
+
+/* ── 탑승 ── */
+#sc-start{background:#1a1a1a}
+.door-container{width:100%;height:100%;display:flex;position:relative;overflow:hidden}
+.door-bg{position:absolute;inset:0;background:#1e1e1e}
+.door-panel{height:100%;position:relative;z-index:2;overflow:hidden;transition:transform .95s cubic-bezier(.4,0,.2,1);width:50%}
+.door-l{background:linear-gradient(180deg,#6e6e6e 0%,#666 44%,#575757 45%,#606060 60%,#666 100%);border-right:4px solid #4e4e4e;transform:translateX(0)}
+.door-r{background:linear-gradient(180deg,#6e6e6e 0%,#666 44%,#575757 45%,#606060 60%,#666 100%);border-left:4px solid #4e4e4e;transform:translateX(0)}
+.door-top-bar{position:absolute;top:0;left:0;right:0;height:24px;background:#111;border-bottom:2px solid #0a0a0a;z-index:3}
+.door-bot-bar{position:absolute;bottom:0;left:0;right:0;height:18px;background:#111;border-top:2px solid #0a0a0a;z-index:3}
+.handle{position:absolute;top:50%;transform:translateY(-50%);width:6px;height:52px;background:#888;border-radius:3px}
+.door-l .handle{right:14px}
+.door-r .handle{left:14px}
+.door-container.open .door-l{transform:translateX(-100%)}
+.door-container.open .door-r{transform:translateX(100%)}
+.cb-overlay{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;transition:opacity .3s}
+.cb-overlay.gone{opacity:0;pointer-events:none}
+.cb-card{background:#fff;border-radius:16px;padding:20px 30px;display:flex;align-items:center;gap:16px;box-shadow:0 12px 48px rgba(0,0,0,.5);cursor:pointer;user-select:none;transition:transform .12s}
+.cb-card:active{transform:scale(.97)}
+.cb-box{width:34px;height:34px;border:2.5px solid #ccc;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;transition:border-color .18s}
+.cb-box.on{border-color:#2563eb}
+.cb-svg{opacity:0;transform:scale(.4) rotate(-15deg);transition:opacity .18s,transform .25s cubic-bezier(.34,1.6,.64,1)}
+.cb-box.on .cb-svg{opacity:1;transform:scale(1) rotate(0)}
+.cb-lbl{font-family:'NeoDunggeunmo',monospace;font-size:22px;color:#1a1a1a;white-space:nowrap}
+
+/* ── 관찰 ── */
+#sc-obs{flex-direction:column;min-height:0;overflow:hidden}
+.obs-prompt{flex-shrink:0;height:46px;background:#fff;border-bottom:.5px solid #e0d8cc;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.08);z-index:5}
+.obs-pt{font-family:'Inter',sans-serif;font-size:16px;color:#555;font-weight:500;letter-spacing:-.02em}
+.obs-pt b{color:#894331;font-weight:800;font-size:18px}
+
+
+/* 호버 피드백: 사진을 가리지 않고 상단 안내문만 반응 */
+.obs-prompt.peek-mode{
+  background:#fff8f0;
+}
+.obs-prompt.peek-mode .obs-pt{
+  color:#5f4b3f;
+}
+
+/* 지하철 씬 */
+.subway-scene{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  min-height:0;
+  background:#1e1e1e;
+}
+
+/* 배경 레이어 — 좌석/통로 구조만 */
+.seat-bg{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  pointer-events:none;
+}
+.backrest-top{height:48px;flex-shrink:0;background:#4A6A8F;box-shadow:inset 0 4px 34px rgba(0,0,0,0.5)}
+.seat-surface-top{height:132px;flex-shrink:0;background:#4A6A8F;box-shadow:inset 0 4px 12px rgba(0,0,0,0.42)}
+.aisle-bg{flex:1;background-color:#8e9496;background-image:url('subway_floor_texture.jpg');background-repeat:repeat;background-size:420px auto;background-position:center;box-shadow:inset 0 10px 24px rgba(0,0,0,.18), inset 0 -10px 24px rgba(0,0,0,.16)}
+.seat-surface-bottom{height:132px;flex-shrink:0;background:#4A6A8F;box-shadow:inset 0 -4px 12px rgba(0,0,0,0.42)}
+.backrest-bottom{height:48px;flex-shrink:0;background:#4A6A8F;box-shadow:inset 0 -4px 34px rgba(0,0,0,0.5)}
+
+/* 인물 레이어 — 씬 전체 덮음 */
+.pax-layer{
+  position:absolute;
+  inset:0;
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  grid-template-columns:1fr;
+  min-height:0;
+}
+
+
+.pax-row-top{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(180px,230px));
+  justify-content:center;
+  column-gap:8px;
+  align-items:flex-end; /* 인물 하단 정렬 → 엉덩이 쪽으로 */
+  position:relative;
+  overflow:visible;
+  z-index:2;
+}
+.pax-row-bottom{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(180px,230px));
+  justify-content:center;
+  column-gap:8px;
+  align-items:flex-start; /* 인물 상단 정렬 → 뒤집혀서 머리가 아래 */
+  position:relative;
+  overflow:visible;
+}
+
+/* 인물 슬롯 */
+.pax-slot{
+  position:relative;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  cursor:pointer;
+  overflow:visible;
+  height:100%;
+}
+.pax-slot:hover{z-index:30}
+.pax-slot.selected::after{content:'';position:absolute;inset:0;border:3px solid #894331;pointer-events:none;z-index:5}
+
+/* 탑뷰 */
+.img-top{
+  position:absolute;
+  bottom:0;
+  width:auto;
+  height:clamp(235px,39dvh,420px);
+  max-height:calc(100% - 10px);
+  max-width:96%;
+  object-fit:contain;
+  object-position:bottom center;
+  pointer-events:none;
+  user-select:none;
+  transition:opacity .2s;
+  left:50%;
+  transform:translateX(-50%);
+}
+
+/* 정면뷰 */
+.img-front{
+  position:absolute;
+  bottom:0;
+  width:auto;
+  height:clamp(235px,39dvh,420px);
+  max-height:calc(100% - 10px);
+  max-width:96%;
+  object-fit:contain;
+  object-position:bottom center;
+  pointer-events:none;
+  user-select:none;
+  opacity:0;
+  transition:opacity .2s;
+  z-index:20;
+  left:50%;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,.4));
+}
+
+/* 호버 */
+.pax-slot:hover .img-top{opacity:0}
+.pax-slot:hover .img-front{opacity:1}
+
+/* 아랫줄: 탑뷰만 180도 */
+.pax-row-bottom .img-top{
+  bottom:auto;
+  top:0;
+  object-position:top center;
+  transform:translateX(-50%) rotate(180deg);
+}
+.pax-row-bottom .img-front{
+  bottom:auto;
+  top:0;
+  object-position:top center;
+  transform:translateX(-50%);
+}
+.pax-row-bottom .pax-slot{align-items:flex-start}
+
+
+/* 개별 인물 크기 보정: 직장인 여성3 */
+.pax-slot[data-id="worker_f03"] .img-top{
+  height:clamp(270px,43dvh,470px);
+}
+.pax-slot[data-id="worker_f03"] .img-front{
+  height:clamp(250px,41dvh,445px);
+}
+
+
+/* 개별 인물 크기 보정: 직장인 여성3 탑뷰 체감 확대 */
+.pax-slot[data-id="worker_f03"] .img-top{
+  transform:translateX(-50%) scale(1.18);
+  transform-origin:center center;
+}
+.pax-row-bottom .pax-slot[data-id="worker_f03"] .img-top{
+  transform:translateX(-50%) rotate(180deg) scale(1.18);
+  transform-origin:center center;
+}
+
+
+/* 아랫줄 호버 정면뷰 보정: 얼굴 가림 방지 */
+.pax-row-bottom .pax-slot:hover{
+  z-index:60;
+}
+.pax-row-bottom .img-front{
+  top:52px;
+  z-index:70;
+  object-position:top center;
+}
+.pax-row-bottom .pax-slot:hover .img-front{
+  opacity:1;
+}
+/* 선택 뱃지 */
+.sel-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#894331;z-index:10;display:none;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(137,67,49,.6)}
+.pax-slot.selected .sel-badge{display:flex}
+.sel-badge svg{width:12px;height:12px;fill:#fff}
+
+/* 푸터 */
+.obs-footer{flex-shrink:0;height:52px;background:#fff;border-top:.5px solid #e0d8cc;display:flex;align-items:center;padding:0 24px;justify-content:flex-end}
+.obs-btn{height:40px;padding:0 26px;border-radius:10px;border:none;background:#e0d8cc;color:#aaa;font-family:'NeoDunggeunmo',monospace;font-size:14px;cursor:not-allowed;white-space:nowrap;transition:all .18s}
+.obs-btn.on{background:#894331;color:#fff;cursor:pointer}
+.obs-btn.on:active{transform:scale(.97)}
+
+/* ── 결과 ── */
+#sc-result{flex-direction:column;background:#f4f0ea}
+.res-header{flex-shrink:0;padding:22px 32px;display:flex;align-items:flex-start;gap:18px;background:#fff;border-bottom:.5px solid #e0d8cc}
+.res-icon{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.res-icon svg{width:24px;height:24px}
+.res-texts{flex:1;display:flex;flex-direction:column;align-items:flex-start}
+.res-title{font-family:'NeoDunggeunmo',monospace;font-size:24px;line-height:1.15;margin-bottom:6px}
+.res-sub{font-family:'Inter',sans-serif;font-size:13px;color:#8f8f8f;font-weight:400;margin-bottom:14px}
+.res-nums{display:flex;gap:18px;flex-wrap:wrap}
+.rn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:68px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.55);border:.5px solid #e7dacf}
+.rn-v{font-family:'NeoDunggeunmo',monospace;font-size:30px;font-weight:700;line-height:1}
+.rn-l{font-family:'Inter',sans-serif;font-size:11px;color:#9a9a9a;font-weight:600}
+.res-body{flex:1;overflow-y:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:20px}
+.station-card{background:#fff;border-radius:14px;padding:20px 22px;border:.5px solid #e0d8cc}
+.station-name{font-family:'NeoDunggeunmo',monospace;font-size:20px;color:#894331;margin-bottom:10px}
+.station-desc{font-family:'Inter',sans-serif;font-size:16px;color:#666;font-weight:400;line-height:1.8}
+.res-section-title{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#9c9c9c;letter-spacing:.08em;text-transform:uppercase}
+.answer-cards{display:flex;gap:14px;flex-wrap:wrap}
+.answer-card{display:flex;align-items:center;gap:16px;background:#fff;border-radius:14px;padding:18px 18px;border:.5px solid #e0d8cc;flex:1;min-width:280px}
+.ac-img{width:72px;height:96px;object-fit:contain;object-position:bottom center;flex-shrink:0}
+.ac-info{flex:1}
+.ac-name{font-family:'Inter',sans-serif;font-size:19px;font-weight:700;color:#1a1a1a;margin-bottom:6px}
+.ac-reason{font-family:'Inter',sans-serif;font-size:15px;color:#777;font-weight:400;line-height:1.7}
+.ac-badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;display:inline-block;margin-top:8px}
+.ac-badge.ok{background:#e8f5e9;color:#2e7d32}
+.ac-badge.miss{background:#fff3e0;color:#e65100}
+.wrong-section{background:#fff8f7;border-radius:14px;padding:18px 20px;border:.5px solid #ffd5d0}
+.wrong-title{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#ef4444;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.wrong-item{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:.5px solid #ffe0de}
+.wrong-item:last-child{border-bottom:none}
+.wrong-img{width:56px;height:74px;object-fit:contain;object-position:bottom center;opacity:.55}
+.wrong-name{font-family:'Inter',sans-serif;font-size:17px;font-weight:600;color:#555}
+.wrong-reason{font-family:'Inter',sans-serif;font-size:14px;color:#9a9a9a;font-weight:400;margin-top:4px}
+.res-footer{flex-shrink:0;height:52px;background:#fff;border-top:.5px solid #e0d8cc;display:flex;align-items:center;padding:0 24px;justify-content:flex-end}
+.res-next{height:40px;padding:0 24px;border-radius:10px;border:none;font-family:'NeoDunggeunmo',monospace;font-size:14px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.res-next.brown{background:#894331;color:#fff}
+.res-next.green{background:#22c55e;color:#000}
+.res-next:active{transform:scale(.97)}
+
+/* ── 종료 ── */
+#sc-end{background:linear-gradient(180deg,#111 0%,#1e1e1e 100%);flex-direction:column;align-items:center;justify-content:center;padding:0 0 170px;text-align:center;position:relative;overflow:hidden}
+#sc-end::before{content:'';position:absolute;top:-10%;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,220,120,.08) 0%,transparent 65%);pointer-events:none}
+.end-exit-sign{font-family:'NeoDunggeunmo',monospace;font-size:15px;color:#f59e0b;letter-spacing:.22em;opacity:.68;margin-bottom:30px}
+.end-label{font-family:'Inter',sans-serif;font-size:14px;color:#666;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;font-weight:500}
+.end-today{font-family:'Inter',sans-serif;font-size:20px;color:#d6d6d6;margin-bottom:14px;font-weight:800;letter-spacing:-.02em}
+.end-score-wrap{display:flex;align-items:baseline;gap:6px;justify-content:center;margin-bottom:6px}
+.end-score-num{font-family:'NeoDunggeunmo',monospace;font-size:96px;color:#fff;line-height:1;letter-spacing:-.02em;text-shadow:0 0 40px rgba(255,255,255,.12)}
+.end-score-denom{font-family:'NeoDunggeunmo',monospace;font-size:40px;color:#333}
+.end-div{width:48px;height:1px;background:#2a2a2a;margin:28px auto}
+.end-comment{font-family:'NeoDunggeunmo',monospace;font-size:20px;color:#ccc;line-height:1.6;margin-bottom:0;max-width:500px;letter-spacing:.02em}
+.end-restart{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);height:58px;padding:0 48px;border-radius:14px;border:1px solid #3a3a3a;background:rgba(0,0,0,.36);color:#888;font-family:'NeoDunggeunmo',monospace;font-size:18px;cursor:pointer;transition:all .2s;z-index:2;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+.end-restart:hover{border-color:#894331;color:#894331;background:rgba(0,0,0,.48)}
+.end-restart:active{transform:translateX(-50%) scale(.98)}
+
+
+@media (max-width: 900px){
+  .pax-row-top,
+  .pax-row-bottom{
+    grid-template-columns:repeat(4,minmax(120px,1fr));
+    column-gap:0;
+  }
+
+  .hb-route{padding:10px 16px 8px}
+  .hb-st:not(.now){display:none}
+  .hb-seg,.hb-arr{display:none}
+  .hb-st.now .hb-ko{font-size:28px}
+  .ticker-inner{font-size:16px}
+  .hg-st{font-size:26px}
+  .hg-door,.hg-arr{font-size:18px}
+}
+
+/* ── v14 디자인 정리: 관찰 가이드북 톤 강화 ── */
+.intro-card{
+  width:min(520px,88vw);
+  min-height:300px;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:0;
+  padding:36px 42px;
+  background:linear-gradient(180deg,#fffaf3 0%,#f2e8db 100%);
+  border:1px solid rgba(137,67,49,.22);
+  border-radius:24px;
+  box-shadow:0 24px 80px rgba(0,0,0,.58);
+}
+.intro-kicker{
+  font-size:13px;
+  font-weight:800;
+  color:#894331;
+  letter-spacing:.12em;
+  margin-bottom:14px;
+}
+.intro-title{
+  font-size:44px;
+  line-height:1.05;
+  font-weight:900;
+  color:#171717;
+  letter-spacing:-.05em;
+  margin-bottom:18px;
+}
+.intro-desc{
+  font-size:16px;
+  line-height:1.75;
+  color:#5e5a55;
+  font-weight:500;
+  margin-bottom:28px;
+}
+.intro-action{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px 18px;
+  border-radius:16px;
+  background:#111;
+  color:#fff;
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+}
+.intro-action .cb-lbl{color:#fff;font-size:18px}
+.intro-tag-icon{border-color:#894331;background:#f4f0ea}
+.intro-hint{
+  margin-top:18px;
+  font-size:11px;
+  color:#8a8177;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.intro-board{
+  width:100%;
+  margin:0 0 6px;
+}
+.drag-stage{
+  position:relative;
+  width:100%;
+  height:190px;
+  border-radius:22px;
+  background:linear-gradient(180deg,#f7efe5 0%,#ede0d1 100%);
+  border:1px dashed rgba(137,67,49,.18);
+  overflow:hidden;
+}
+.tag-reader{
+  position:absolute;
+  left:28px;
+  top:50%;
+  transform:translateY(-50%);
+  width:140px;
+  height:140px;
+  border-radius:24px;
+  background:linear-gradient(180deg,#111 0%,#252525 100%);
+  box-shadow:0 16px 34px rgba(0,0,0,.28);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  gap:8px;
+}
+.tag-reader-top{
+  font-size:10px;
+  letter-spacing:.18em;
+  color:#a5a5a5;
+  font-weight:700;
+}
+.tag-reader-ring{
+  width:58px;
+  height:58px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.82);
+  box-shadow:0 0 0 10px rgba(255,255,255,.06), inset 0 0 20px rgba(255,255,255,.08);
+}
+.tag-reader-bottom{
+  font-size:12px;
+  font-weight:800;
+  color:#f0f0f0;
+}
+.tag-reader.ready{
+  box-shadow:0 16px 34px rgba(0,0,0,.28), 0 0 0 3px rgba(70,201,122,.18);
+}
+.tag-reader.ready .tag-reader-ring{
+  border-color:#7cf0ab;
+  box-shadow:0 0 0 10px rgba(124,240,171,.08), inset 0 0 22px rgba(124,240,171,.2);
+}
+.climate-card-wrap{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  transform:none;
+}
+.climate-card{
+  position:absolute;
+  left:0;
+  top:0;
+  width:250px;
+  height:160px;
+  border-radius:22px;
+  overflow:visible;
+  cursor:grab;
+  box-shadow:none;
+  transition:box-shadow .18s, transform .18s;
+  touch-action:none;
+  user-select:none;
+  background:transparent;
+}
+.climate-card img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none;
+  filter:drop-shadow(0 18px 26px rgba(13,39,100,.24));
+}
+.climate-card.dragging{
+  cursor:grabbing;
+  transition:none;
+}
+.climate-card.tagged img{
+  filter:drop-shadow(0 0 0 rgba(0,0,0,0)) drop-shadow(0 0 10px rgba(124,240,171,.35)) drop-shadow(0 18px 26px rgba(13,39,100,.24));
+}
+@media (max-width: 900px){
+  .drag-stage{height:176px}
+  .tag-reader{left:18px;width:122px;height:122px}
+  .climate-card-wrap{inset:0;width:100%;height:100%;transform:none}
+  .climate-card{width:210px;height:134px}
+}
+
+/* 결과 화면 정보 강화 */
+.res-comment{
+  margin:2px 0 14px;
+  font-size:14px;
+  color:#5f5a55;
+  font-weight:700;
+  line-height:1.5;
+}
+.res-meta{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.meta-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#f2e8db;
+  color:#6f3d2e;
+  border:.5px solid rgba(137,67,49,.18);
+  font-size:12px;
+  font-weight:800;
+}
+.station-tags{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.station-tag{
+  padding:5px 9px;
+  border-radius:999px;
+  background:#f4f0ea;
+  color:#894331;
+  font-size:12px;
+  font-weight:800;
+}
+.end-report{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:12px;
+  min-width:320px;
+}
+.end-report-row{
+  display:flex;
+  justify-content:space-between;
+  gap:24px;
+  padding:9px 14px;
+  border-radius:10px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.06);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;
+  font-size:13px;
+  color:#aaa;
+}
+.end-report-row b{color:#e8e8e8}
+
+
+.tag-sound-msg{
+  position:absolute;
+  left:50%;
+  bottom:-34px;
+  transform:translateX(-50%);
+  padding:6px 10px;
+  border-radius:999px;
+  background:#111;
+  color:#7cf0ab;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+  animation:tagMsg .72s ease both;
+  pointer-events:none;
+}
+@keyframes tagMsg{
+  0%{opacity:0;transform:translateX(-50%) translateY(4px)}
+  20%{opacity:1;transform:translateX(-50%) translateY(0)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-5px)}
+}
+
+
+/* v24: 시작 화면만 승차 게이트 탑뷰 스타일로 교체 — 플레이 화면 CSS는 기존 안정 버전 유지 */
+.gate-card{
+  width:min(860px,90vw) !important;
+  min-height:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  cursor:default !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.gate-card:active{transform:none !important}
+.gate-shell{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+.gate-machine{
+  position:relative;
+  width:100%;
+  height:410px;
+  border-radius:28px;
+  background:
+    linear-gradient(180deg,#5d5d5d 0%,#343434 12%,#171717 18%,#0b0b0b 100%);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:
+    0 30px 70px rgba(0,0,0,.52),
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 -30px 80px rgba(0,0,0,.46);
+  overflow:hidden;
+}
+.gate-machine::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:0;
+  transform:translateX(-50%);
+  width:18px;
+  height:100%;
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02) 30%,rgba(0,0,0,.25) 100%);
+  opacity:.7;
+}
+.gate-machine::after{
+  content:"";
+  position:absolute;
+  inset:18px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.04);
+  pointer-events:none;
+}
+.machine-screen{
+  position:absolute;
+  left:50%;
+  top:36px;
+  transform:translateX(-50%);
+  width:min(600px,74%);
+  min-height:122px;
+  padding:18px 24px;
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(107,220,255,.16),transparent 42%),
+    linear-gradient(180deg,#234d89 0%,#173360 55%,#102449 100%);
+  border:1px solid rgba(130,189,255,.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    0 0 22px rgba(63,136,255,.18);
+  text-align:center;
+}
+.machine-screen-mini{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:13px;
+  color:#8fdfff;
+  letter-spacing:.08em;
+  opacity:.86;
+  margin-bottom:8px;
+}
+.machine-screen-title{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:44px;
+  color:#a9f0ff;
+  line-height:1.04;
+  letter-spacing:.02em;
+  text-shadow:0 0 14px rgba(99,225,255,.28);
+  margin-bottom:12px;
+}
+.machine-screen-desc{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:18px;
+  line-height:1.55;
+  color:#d8fbff;
+  opacity:.94;
+}
+.gate-reader{
+  position:absolute !important;
+  left:84px !important;
+  bottom:54px !important;
+  top:auto !important;
+  transform:none !important;
+  width:360px !important;
+  height:152px !important;
+  border-radius:18px !important;
+  background:linear-gradient(180deg,#080808 0%,#111 100%) !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03),0 10px 28px rgba(0,0,0,.34) !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+}
+.reader-corner{
+  position:absolute;
+  width:22px;
+  height:22px;
+  border:4px solid #4bff8a;
+  filter:drop-shadow(0 0 6px rgba(75,255,138,.35));
+}
+.reader-corner.tl{left:12px;top:12px;border-right:none;border-bottom:none}
+.reader-corner.tr{right:12px;top:12px;border-left:none;border-bottom:none}
+.reader-corner.bl{left:12px;bottom:12px;border-right:none;border-top:none}
+.reader-corner.br{right:12px;bottom:12px;border-left:none;border-top:none}
+.tag-reader-display{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:15px;
+  color:#cdefff;
+  letter-spacing:.06em;
+  opacity:.8;
+}
+.tag-reader-symbol{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:42px;
+  line-height:1;
+  color:#efffff;
+  opacity:.95;
+}
+.gate-reader .tag-reader-bottom{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:17px;
+  color:#6fffa3;
+  letter-spacing:.04em;
+}
+.gate-reader.ready{
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03),0 10px 28px rgba(0,0,0,.34),0 0 0 3px rgba(75,255,138,.18) !important;
+}
+.gate-reader.ready .tag-reader-bottom,
+.gate-reader.ready .tag-reader-symbol{
+  color:#9dffbf;
+  text-shadow:0 0 10px rgba(75,255,138,.25);
+}
+.gate-card .climate-card-wrap{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  transform:none !important;
+}
+.gate-card .climate-card{
+  width:250px !important;
+  height:160px !important;
+  transform:rotate(-7deg);
+}
+.gate-card .climate-card.dragging{
+  transform:rotate(-2deg) scale(1.02);
+}
+.gate-card .climate-card.tagged{
+  transform:rotate(0deg) scale(.98);
+}
+.gate-hint{
+  font-family:'NeoDunggeunmo',monospace;
+  font-size:20px;
+  color:#c8c8c8;
+  letter-spacing:.02em;
+  text-align:center;
+}
+.gate-hint span{
+  color:#8a8a8a;
+  margin-left:10px;
+}
+@media (max-width: 900px){
+  .gate-machine{height:360px}
+  .machine-screen{top:28px;width:82%;padding:16px 18px}
+  .machine-screen-mini{font-size:11px}
+  .machine-screen-title{font-size:34px}
+  .machine-screen-desc{font-size:15px}
+  .gate-reader{left:28px !important;bottom:36px !important;width:270px !important;height:132px !important}
+  .tag-reader-symbol{font-size:34px}
+  .tag-reader-display{font-size:12px}
+  .gate-reader .tag-reader-bottom{font-size:14px}
+  .gate-card .climate-card{width:210px !important;height:134px !important}
+  .gate-hint{font-size:15px;line-height:1.5;padding:0 8px}
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 헤더 -->
+  <div class="header" id="header">
+    <div class="hdr-boarding" id="hdr-boarding">
+      <div class="hb-route">
+        <div class="hb-st">
+          <span class="hb-ko">마포구청</span>
+          <span class="hb-en">Mapo-gu Office</span>
+        </div>
+        <div class="hb-seg"></div>
+        <div class="hb-st now">
+          <span class="hb-ko">망원</span>
+          <span class="hb-en">Mangwon</span>
+        </div>
+        <div class="hb-seg"></div>
+        <div class="hb-arr">▶</div>
+        <div class="hb-seg"></div>
+        <div class="hb-st">
+          <span class="hb-ko">합정</span>
+          <span class="hb-en">Hapjeong</span>
+        </div>
+      </div>
+      <div class="ticker-bar">
+        <span class="ticker-inner">망원부터 석계까지&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;과연 앉아서 갈 수 있을까?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;복장과 소지품을 보고 하차 승객을 예측하세요&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;이번 역에서 내릴 승객은 누구일까요?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      </div>
+    </div>
+    <div class="hdr-game" id="hdr-game">
+      <div class="hg-inner">
+        <div class="hg-row1">
+          <span class="hg-lbl">이번 역</span>
+          <span class="hg-st" id="hg-st">합정</span>
+        </div>
+        <div class="hg-row2">
+          <span class="hg-arr">←</span>
+          <span class="hg-door">내리실 문</span>
+        </div>
+      </div>
+      <div class="ticker-bar">
+        <span class="ticker-inner" id="hg-ticker"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 -->
+  <div class="main">
+
+    <!-- 탑승 -->
+    <div class="screen on" id="sc-start">
+      <div class="door-container" id="doors">
+        <div class="door-bg"></div>
+        <div class="door-panel door-l">
+          <div class="door-top-bar"></div><div class="door-bot-bar"></div><div class="handle"></div>
+        </div>
+        <div class="door-panel door-r">
+          <div class="door-top-bar"></div><div class="door-bot-bar"></div><div class="handle"></div>
+        </div>
+        <div class="cb-overlay" id="cb-overlay">
+          
+<div class="cb-card intro-card gate-card" id="cb-card">
+            <div class="gate-shell">
+              <div class="gate-machine" id="drag-stage">
+                <div class="machine-screen">
+                  <div class="machine-screen-mini">LINE 6 COMMUTE OBSERVATION GAME</div>
+                  <div class="machine-screen-title">등굣길 자리잡기</div>
+                  <div class="machine-screen-desc">복장 · 소지품 · 자세 · 생활권 단서로<br>이번 역에서 내릴 승객을 예측하세요</div>
+                </div>
+
+                <div class="tag-reader gate-reader" id="tag-reader">
+                  <span class="reader-corner tl"></span>
+                  <span class="reader-corner tr"></span>
+                  <span class="reader-corner bl"></span>
+                  <span class="reader-corner br"></span>
+                  <div class="tag-reader-display">CARD TAP TO START</div>
+                  <div class="tag-reader-symbol">)))</div>
+                  <div class="tag-reader-bottom">카드 태그</div>
+                </div>
+
+                <div class="climate-card-wrap">
+                  <div class="climate-card" id="climate-card" role="button" aria-label="카드를 태그해 탑승하기">
+                    <img src="climate_card_transparent.png" alt="블루 무한대 카드 그래픽">
+                  </div>
+                </div>
+              </div>
+
+              <div class="gate-hint">카드를 드래그해 태그하면 문이 열립니다 <span>LINE 6 · MANGWON → SEOKGYE</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 관찰 -->
+    <div class="screen" id="sc-obs">
+      <div class="obs-prompt">
+        <span class="obs-pt"><b id="obs-st">합정역</b> 하차 승객을 관찰해 선택하세요</span>
+      </div>
+      <div class="subway-scene">
+        <!-- 배경: 좌석/통로 구조 -->
+        <div class="seat-bg">
+          <div class="backrest-top"></div>
+          <div class="seat-surface-top"></div>
+          <div class="aisle-bg"></div>
+          <div class="seat-surface-bottom"></div>
+          <div class="backrest-bottom"></div>
+        </div>
+        <!-- 인물 레이어 -->
+        <div class="pax-layer">
+          <div class="pax-row-top" id="seat-top-row"></div>
+          <div class="pax-row-bottom" id="seat-bottom-row"></div>
+        </div>
+      </div>
+      <div class="obs-footer">
+        <button class="obs-btn" id="obs-btn" disabled>문이 열립니다</button>
+      </div>
+    </div>
+
+    <!-- 결과 -->
+    <div class="screen" id="sc-result">
+      <div class="res-header" id="res-header"></div>
+      <div class="res-body" id="res-body"></div>
+      <div class="res-footer">
+        <button class="res-next" id="res-next">다음 역</button>
+      </div>
+    </div>
+
+    <!-- 종료 -->
+    <div class="screen" id="sc-end">
+      <div class="end-exit-sign">EXIT ↑ 출구</div>
+      <div class="end-label">오늘의 등굣길</div>
+      <div class="end-today">앉아서 간 역</div>
+      <div class="end-score-wrap">
+        <span class="end-score-num" id="end-num">0</span>
+        <span class="end-score-denom">/ 24</span>
+      </div>
+      <div class="end-div"></div>
+      <div class="end-comment" id="end-comment"></div>
+      <button class="end-restart" id="end-restart">4번 출구로 나가기</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const BASE = 'https://raw.githubusercontent.com/eowjd/subway_game/main/';
+const V = '?v=1';
+
+const PERSONS = [
+  {id:'casual_f01', name:'캐주얼 여성',   top:'casual_f01_top.png',    front:'casual_f01_front.png',
+   desc:'합정·상수 카페거리 인근 직종. 캐주얼하지만 세련된 코디.'},
+  {id:'casual_m01', name:'바람막이 남성',  top:'casual_m01_top.png',    front:'casual_m01_front.png',
+   desc:'합정·이태원 라이프스타일 직종. 네이비 바람막이+스니커즈.'},
+  {id:'casual_m02', name:'힙스터 남성',    top:'casual_m02_top.png',    front:'casual_m02_front.png',
+   desc:'이태원·삼각지 글로벌 감성. 블랙 데님+비니 조합.'},
+  {id:'foreigner_m01', name:'외국인 남성', top:'foreign_male_top.png', front:'foreign_male_front.png',
+   desc:'이태원 외국계 기업 또는 F&B 종사자. 글로벌한 패션 센스.'},
+  {id:'student_f01', name:'여학생',        top:'student_f01_top.png',   front:'student_f01_front.png',
+   desc:'월곡 인근 대학 통학생. 헤드폰+백팩+캐주얼 코디.'},
+  {id:'student_m01', name:'남학생1',       top:'student_m01_top.png',   front:'student_m01_front.png',
+   desc:'상월곡 인근 대학 통학생. 스타디움 점퍼+청바지.'},
+  {id:'student_m02', name:'남학생2',       top:'student_m02_top.png',   front:'student_m02_front.png',
+   desc:'대흥 인근 대학 통학생. 후드+청바지 캐주얼 룩.'},
+  {id:'worker_f01', name:'직장인 여성1',   top:'worker_f01_top.png',    front:'worker_f01_front.png',
+   desc:'공덕 오피스 출근. 네이비 블레이저+로퍼 단정한 사무직 룩.'},
+  {id:'worker_f02', name:'직장인 여성2',   top:'worker_f02_top.png',    front:'worker_f02_front.png',
+   desc:'공덕·신당 사무직. 그레이 가디건+스트라이프 셔츠.'},
+  {id:'worker_f03', name:'직장인 여성3',   top:'worker_f03_top.png',    front:'worker_f03_front.png',
+   desc:'공덕·신당 오피스. 베이지 트렌치코트+블랙 팬츠.'},
+  {id:'worker_f04', name:'직장인 여성4',   top:'worker_f04_top.png',    front:'worker_f04_front.png',
+   desc:'신당 인근 사무직. 블랙 블레이저+화이트 티 캐주얼 오피스.'},
+  {id:'worker_f05', name:'직장인 여성5',   top:'worker_f05_top.png',    front:'worker_f05_front.png',
+   desc:'공덕·신당 직장인. 단정한 오피스 룩.'},
+  {id:'worker_m01', name:'직장인 남성1',   top:'worker_m01_top.png',    front:'worker_m01_front.png',
+   desc:'공덕 금융·법무 종사자. 네이비 수트+타이+구두.'},
+  {id:'worker_m02', name:'직장인 남성2',   top:'worker_m02_top.png',    front:'worker_m02_front.png',
+   desc:'공덕·삼각지 오피스. 다크 수트+안경.'},
+  {id:'worker_m03', name:'직장인 남성3',   top:'worker_m03_top.png',    front:'worker_m03_front.png',
+   desc:'삼각지·공덕 관공서 인근. 포멀한 비즈니스 수트.'},
+];
+
+const CLUES = {
+  "casual_f01": [
+    "캐주얼룩",
+    "작은 가방",
+    "카페거리"
+  ],
+  "casual_m01": [
+    "바람막이",
+    "스니커즈",
+    "라이프스타일"
+  ],
+  "casual_m02": [
+    "비니",
+    "블랙 데님",
+    "개성 강함"
+  ],
+  "foreigner_m01": [
+    "외국인",
+    "자유로운 복장",
+    "이태원"
+  ],
+  "student_f01": [
+    "헤드폰",
+    "백팩",
+    "학생룩"
+  ],
+  "student_m01": [
+    "점퍼",
+    "청바지",
+    "통학러"
+  ],
+  "student_m02": [
+    "후드",
+    "가벼운 짐",
+    "대학가"
+  ],
+  "worker_f01": [
+    "블레이저",
+    "로퍼",
+    "오피스"
+  ],
+  "worker_f02": [
+    "가디건",
+    "스트라이프",
+    "사무직"
+  ],
+  "worker_f03": [
+    "트렌치코트",
+    "단정한 가방",
+    "오피스"
+  ],
+  "worker_f04": [
+    "블랙 재킷",
+    "화이트 티",
+    "실용적"
+  ],
+  "worker_f05": [
+    "단정한 룩",
+    "출근 동선",
+    "직장인"
+  ],
+  "worker_m01": [
+    "수트",
+    "타이",
+    "금융/법무"
+  ],
+  "worker_m02": [
+    "다크 수트",
+    "안경",
+    "환승/오피스"
+  ],
+  "worker_m03": [
+    "포멀 수트",
+    "관공서",
+    "삼각지"
+  ]
+};
+
+const STATION_META = {
+  "합정": {
+    "difficulty": "★★☆☆☆",
+    "tags": [
+      "홍대·합정",
+      "카페거리",
+      "젊은 유동인구"
+    ]
+  },
+  "상수": {
+    "difficulty": "★★☆☆☆",
+    "tags": [
+      "홍익대",
+      "작업실",
+      "카페 아르바이트"
+    ]
+  },
+  "대흥": {
+    "difficulty": "★★★☆☆",
+    "tags": [
+      "서강대",
+      "서울디자인고",
+      "생활권 승객"
+    ]
+  },
+  "공덕": {
+    "difficulty": "★★★★☆",
+    "tags": [
+      "환승 허브",
+      "오피스",
+      "직장인 밀집"
+    ]
+  },
+  "삼각지": {
+    "difficulty": "★★★★☆",
+    "tags": [
+      "4호선 환승",
+      "관공서",
+      "포멀한 복장"
+    ]
+  },
+  "이태원": {
+    "difficulty": "★★★☆☆",
+    "tags": [
+      "외국인",
+      "F&B",
+      "패션·문화"
+    ]
+  },
+  "신당": {
+    "difficulty": "★★★★★",
+    "tags": [
+      "환승",
+      "생활권 혼합",
+      "애매한 단서"
+    ]
+  },
+  "월곡": {
+    "difficulty": "★★☆☆☆",
+    "tags": [
+      "동덕여대",
+      "통학 구간",
+      "백팩"
+    ]
+  },
+  "상월곡": {
+    "difficulty": "★★★☆☆",
+    "tags": [
+      "KIST",
+      "연구·업무",
+      "목적지 뚜렷"
+    ]
+  }
+};
+
+// 역별 설정: name, prev, next, ann, correctIds, stationDesc
+const STATIONS = [
+  {name:'합정', prev:'망원',   next:'상수',
+   ann:'잠시 후 합정역에 도착합니다. 내리실 문은 왼쪽입니다. 2호선 환승역입니다.',
+   stationDesc:'홍대·합정 상권과 가까운 환승 구간이다. 카페, 편집숍, 디자인 스튜디오, 학원가를 오가는 학생과 젊은 승객이 많다. 캐주얼하지만 신경 쓴 옷차림의 승객을 주의 깊게 볼 필요가 있다.',
+   correctIds:['casual_f01','casual_m01','casual_m02']},
+  {name:'상수', prev:'합정',   next:'광흥창',
+   ann:'잠시 후 상수역에 도착합니다. 내리실 문은 오른쪽입니다.',
+   stationDesc:'홍익대학교와 상수 카페거리 인근 역이다. 수업, 작업실, 카페 아르바이트, 약속 장소로 이동하는 대학생과 20대 승객이 많이 내린다. 편한 복장에 백팩이나 캐주얼한 소지품을 든 승객이 단서가 될 수 있다.',
+   correctIds:['casual_f01','casual_m01']},
+  {name:'대흥', prev:'광흥창', next:'공덕',
+   ann:'잠시 후 대흥역에 도착합니다. 내리실 문은 오른쪽입니다.',
+   stationDesc:'서강대 일대 대학가와 서울디자인고가 가까운 역이다. 통학 중인 학생뿐 아니라 학교 관계자, 학부모, 인근 직장인 등 어른 승객도 함께 내릴 수 있다. 캠퍼스룩과 단정한 생활권 복장을 같이 봐야 한다.',
+   correctIds:['student_m02']},
+  {name:'공덕', prev:'대흥',   next:'효창공원앞',
+   ann:'잠시 후 공덕역에 도착합니다. 내리실 문은 왼쪽입니다. 5호선·경의중앙선·공항철도 환승역입니다.',
+   stationDesc:'여러 노선이 만나는 큰 환승역이자 오피스 밀집 지역이다. 등교 중인 학생도 지나가지만, 이 역에서는 직장인과 환승객 비율이 확 올라간다. 정장, 셔츠, 노트북 가방처럼 출근 느낌이 강한 승객을 체크해야 한다.',
+   correctIds:['worker_f01','worker_f02','worker_f03','worker_m01','worker_m02']},
+  {name:'삼각지', prev:'효창공원앞', next:'녹사평',
+   ann:'잠시 후 삼각지역에 도착합니다. 내리실 문은 오른쪽입니다. 4호선 환승역입니다.',
+   stationDesc:'4호선으로 갈아탈 수 있는 환승역이자 관공서·사무지구 이동이 섞이는 역이다. 학생보다는 직장인, 공공기관·사무직 승객, 삼각지 주변 약속 장소로 가는 승객이 눈에 띈다. 단정한 옷차림이나 포멀한 가방이 힌트가 될 수 있다.',
+   correctIds:['casual_m02','worker_m02','worker_m03']},
+  {name:'이태원', prev:'녹사평', next:'한강진',
+   ann:'잠시 후 이태원역에 도착합니다. 내리실 문은 왼쪽입니다.',
+   stationDesc:'외국인 승객과 개성 있는 스타일의 승객이 많이 오가는 역이다. 학교보다는 약속, 아르바이트, 외국계 매장, F&B, 패션·문화 공간으로 향하는 승객이 많다. 튀는 스타일이나 자유로운 복장이 단서가 된다.',
+   correctIds:['casual_m01','casual_m02','foreigner_m01']},
+  {name:'신당', prev:'청구',   next:'동묘앞',
+   ann:'잠시 후 신당역에 도착합니다. 내리실 문은 오른쪽입니다. 2호선 환승역입니다.',
+   stationDesc:'환승 수요와 생활권 이동이 함께 있는 역이다. 통학러, 직장인, 동네 주민이 섞여 있어 단서가 애매해지기 쉽다. 너무 학생 같지도, 너무 출근 같지도 않은 실용적인 복장의 승객을 주의해서 봐야 한다.',
+   correctIds:['worker_f02','worker_f04','worker_f05','worker_m01']},
+  {name:'월곡', prev:'상월곡', next:'상월곡',
+   ann:'잠시 후 월곡역에 도착합니다. 내리실 문은 왼쪽입니다.',
+   stationDesc:'동덕여대와 주거지가 가까운 통학 구간이다. 수업을 들으러 가는 학생, 자취방으로 돌아가는 학생, 가벼운 백팩이나 노트북을 든 승객이 내릴 가능성이 있다. 편안한 학생룩이 가장 중요한 단서다.',
+   correctIds:['student_f01']},
+  {name:'상월곡', prev:'월곡', next:'돌곶이',
+   ann:'잠시 후 상월곡역에 도착합니다. 내리실 문은 오른쪽입니다.',
+   stationDesc:'한국과학기술연구원과 주거지가 이어지는 역이다. 연구·업무 목적의 승객과 생활권 이동 승객이 섞이며, 비교적 목적지가 분명한 승객이 많다. 백팩, 점퍼, 편한 신발처럼 오래 이동한 통학러·출근러 느낌을 확인하는 게 좋다.',
+   correctIds:['student_m01']},
+];
+
+// 화면에 배치할 인물 (역마다 8명 선택)
+const DISPLAY_PER_STATION = {
+  '합정':  ['casual_f01','casual_m01','casual_m02','foreigner_m01','worker_f01','worker_m01','student_f01','student_m01'],
+  '상수':  ['casual_f01','casual_m01','student_m02','worker_f02','worker_m02','worker_f03','casual_m02','student_m01'],
+  '대흥':  ['student_m02','student_f01','casual_f01','worker_f01','worker_m01','casual_m01','worker_f04','worker_f05'],
+  '공덕':  ['worker_f01','worker_f02','worker_f03','worker_m01','worker_m02','casual_m01','student_m02','casual_f01'],
+  '삼각지':['casual_m02','worker_m02','worker_m03','worker_f01','casual_m01','worker_f02','foreigner_m01','student_m01'],
+  '이태원':['casual_m01','casual_m02','foreigner_m01','worker_f03','student_f01','worker_m01','casual_f01','worker_f04'],
+  '신당':  ['worker_f02','worker_f04','worker_f05','worker_m01','casual_m02','worker_f01','student_m02','worker_m03'],
+  '월곡':  ['student_f01','student_m01','casual_f01','worker_f01','casual_m01','worker_m02','student_m02','worker_f03'],
+  '상월곡':['student_m01','student_f01','casual_m01','worker_m01','worker_f01','casual_m02','student_m02','worker_f02'],
+};
+
+const $=id=>document.getElementById(id);
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+function playTagBeep(){
+  try{
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if(ctx.state === 'suspended') ctx.resume();
+    const master = ctx.createGain();
+    master.gain.value = 0.28;
+    master.connect(ctx.destination);
+    const now = ctx.currentTime;
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'square';
+    osc1.frequency.setValueAtTime(1760, now);
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.22, now + 0.012);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    osc1.connect(gain1); gain1.connect(master);
+    osc1.start(now); osc1.stop(now + 0.15);
+  }catch(e){}
+}
+function playTransferVoice(){
+  try{
+    if(!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance('삑, 환승입니다');
+    utt.lang = 'ko-KR';
+    utt.rate = 0.96;
+    utt.pitch = 1.0;
+    utt.volume = 1;
+    window.speechSynthesis.speak(utt);
+  }catch(e){}
+}
+function showTagMessage(){
+  const reader=$('tag-reader');
+  if(!reader) return;
+  const old=reader.querySelector('.tag-sound-msg');
+  if(old) old.remove();
+  const msg=document.createElement('div');
+  msg.className='tag-sound-msg';
+  msg.textContent='삑 · 환승입니다';
+  reader.appendChild(msg);
+}
+function playTagSound(){
+  showTagMessage();
+  playTagBeep();
+  setTimeout(playTransferVoice,80);
+}
+
+
+let gameIdx=0, wins=0, firstFail='';
+const selected=new Set();
+const stationResults={}; // 역별 결과 저장
+
+function showScreen(id){
+  ['sc-start','sc-obs','sc-result','sc-end'].forEach(s=>$(s).classList.toggle('on',s===id));
+}
+function setHeader(boarding){
+  $('hdr-boarding').classList.toggle('hide',!boarding);
+  $('hdr-game').classList.toggle('show',!boarding);
+}
+
+// 체크박스
+let cbDone=false;
+async function onCheck(){
+  if(cbDone)return;
+  cbDone=true;
+  $('tag-reader').classList.add('ready');
+  $('climate-card').classList.add('tagged');
+  await delay(350);
+  $('cb-overlay').classList.add('gone');
+  await delay(220);
+  $('doors').classList.add('open');
+  await delay(900);
+  setHeader(false);
+  startRound(0);
+}
+
+const climateCard=$('climate-card');
+const dragStage=$('drag-stage');
+const tagReader=$('tag-reader');
+let dragState=null;
+
+function cardOrigin(){
+  const stage=dragStage.getBoundingClientRect();
+  const cardW=climateCard.offsetWidth || 250;
+  const cardH=climateCard.offsetHeight || 160;
+  return {
+    x: stage.width - cardW - 82,
+    y: stage.height - cardH - 48
+  };
+}
+function setCardPos(x,y){
+  climateCard.style.left = x + 'px';
+  climateCard.style.top = y + 'px';
+}
+function resetCard(animated=true){
+  const o=cardOrigin();
+  if(animated) climateCard.style.transition='left .24s ease, top .24s ease';
+  setCardPos(o.x,o.y);
+  setTimeout(()=>{ if(!dragState) climateCard.style.transition='box-shadow .18s, transform .18s'; },260);
+}
+function isOverReader(){
+  const cardRect = climateCard.getBoundingClientRect();
+  const readerRect = tagReader.getBoundingClientRect();
+  const cardCx = cardRect.left + cardRect.width/2;
+  const cardCy = cardRect.top + cardRect.height/2;
+  const readerCx = readerRect.left + readerRect.width/2;
+  const readerCy = readerRect.top + readerRect.height/2;
+  const dx = cardCx - readerCx;
+  const dy = cardCy - readerCy;
+  return Math.sqrt(dx*dx + dy*dy) < 210;
+}
+function snapToReaderAndStart(){
+  if(cbDone) return;
+  const stageRect = dragStage.getBoundingClientRect();
+  const readerRect = tagReader.getBoundingClientRect();
+  const x = readerRect.left - stageRect.left + (readerRect.width - climateCard.offsetWidth)/2;
+  const y = readerRect.top - stageRect.top + (readerRect.height - climateCard.offsetHeight)/2;
+  climateCard.style.transition='left .2s ease, top .2s ease, transform .18s ease';
+  setCardPos(x,y);
+  climateCard.classList.add('tagged');
+  tagReader.classList.add('ready');
+  playTagSound();
+  onCheck();
+}
+
+function startDrag(clientX, clientY){
+  if(cbDone) return;
+  const stageRect = dragStage.getBoundingClientRect();
+  const cardRect = climateCard.getBoundingClientRect();
+  dragState = { dx: clientX - cardRect.left, dy: clientY - cardRect.top, stageRect };
+  climateCard.classList.add('dragging');
+  climateCard.style.transition='none';
+}
+function moveDrag(clientX, clientY){
+  if(!dragState || cbDone) return;
+  const stageRect = dragState.stageRect;
+  let x = clientX - stageRect.left - dragState.dx;
+  let y = clientY - stageRect.top - dragState.dy;
+  const maxX = stageRect.width - climateCard.offsetWidth;
+  const maxY = stageRect.height - climateCard.offsetHeight;
+  x = Math.max(0, Math.min(maxX, x));
+  y = Math.max(0, Math.min(maxY, y));
+  setCardPos(x,y);
+  tagReader.classList.toggle('ready', isOverReader());
+}
+function endDrag(){
+  if(!dragState || cbDone) return;
+  climateCard.classList.remove('dragging');
+  const over = isOverReader();
+  dragState = null;
+  if(over) snapToReaderAndStart();
+  else{
+    tagReader.classList.remove('ready');
+    climateCard.classList.remove('tagged');
+    resetCard(true);
+  }
+}
+
+climateCard.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  startDrag(e.clientX, e.clientY);
+});
+document.addEventListener('pointermove', e=> moveDrag(e.clientX, e.clientY));
+document.addEventListener('pointerup', ()=> endDrag());
+document.addEventListener('pointercancel', ()=> endDrag());
+window.addEventListener('load', ()=> resetCard(false));
+window.addEventListener('resize', ()=> { if(!dragState && !cbDone) resetCard(false); });
+
+tagReader.addEventListener('click',()=>{
+  if(cbDone) return;
+  snapToReaderAndStart();
+});
+
+
+// 라운드
+function startRound(idx){
+  gameIdx=idx; selected.clear();
+  const st=STATIONS[idx];
+  $('hg-st').textContent=st.name;
+  $('hg-ticker').textContent=st.ann+'     ';
+  $('obs-st').textContent=st.name+'역';
+  $('obs-st').parentElement.lastChild.textContent=' 하차 승객을 관찰해 선택하세요';
+  $('obs-btn').disabled=true;
+  $('obs-btn').classList.remove('on');
+  renderScene(st);
+  showScreen('sc-obs');
+}
+
+// 씬 렌더
+function renderScene(st){
+  const topRow=$('seat-top-row');
+  const botRow=$('seat-bottom-row');
+  topRow.innerHTML='';
+  botRow.innerHTML='';
+  const displayIds=DISPLAY_PER_STATION[st.name];
+  const displayPersons=displayIds.map(id=>PERSONS.find(p=>p.id===id));
+
+  displayPersons.forEach((p,i)=>{
+    const slot=document.createElement('div');
+    slot.className='pax-slot'; slot.dataset.id=p.id;
+    slot.innerHTML=`
+      <img class="img-top"   src="${BASE}${p.top}${V}"   alt="${p.name}">
+      <img class="img-front" src="${BASE}${p.front}${V}" alt="${p.name}">
+      <div class="sel-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+    `;
+    slot.addEventListener('mouseenter',()=>{
+      const prompt=$('obs-st').parentElement;
+      $('sc-obs').querySelector('.obs-prompt').classList.add('peek-mode');
+      prompt.lastChild.textContent=' 하차 승객을 슬쩍 확인 중';
+    });
+    slot.addEventListener('mouseleave',()=>{
+      const prompt=$('obs-st').parentElement;
+      $('sc-obs').querySelector('.obs-prompt').classList.remove('peek-mode');
+      prompt.lastChild.textContent=' 하차 승객을 관찰해 선택하세요';
+    });
+    slot.addEventListener('click',()=>{
+      if(selected.has(p.id)){selected.delete(p.id);slot.classList.remove('selected');}
+      else{selected.add(p.id);slot.classList.add('selected');}
+      $('obs-btn').disabled=selected.size===0;
+      $('obs-btn').classList.toggle('on',selected.size>0);
+    });
+    if(i<4) topRow.appendChild(slot);
+    else botRow.appendChild(slot);
+  });
+}
+
+// 제출
+$('obs-btn').addEventListener('click',()=>{
+  if($('obs-btn').disabled)return;
+  const st=STATIONS[gameIdx];
+  const correct=new Set(st.correctIds);
+  const selArr=[...selected];
+  const hit=selArr.filter(id=>correct.has(id)).length;
+  const bad=selArr.filter(id=>!correct.has(id)).length;
+  const miss=[...correct].filter(id=>!selected.has(id));
+  const ok=hit===correct.size&&bad===0;
+  if(ok){wins++;stationResults[st.name]='success';}
+  else{stationResults[st.name]='fail';if(!firstFail)firstFail=st.name;}
+  renderResult(ok,hit,bad,miss,correct,selArr,st);
+});
+
+// 결과
+function renderResult(ok,hit,bad,miss,correct,selArr,st){
+  // 헤더
+  const hdr=$('res-header');
+  const meta=STATION_META[st.name]||{difficulty:'★★★☆☆',tags:[]};
+  const resultComment=ok?'통학러의 감이 빛났습니다. 이 승객이 곧 일어날 타이밍을 잡았습니다.':(bad>0?'단서가 섞였습니다. 복장만 보지 말고 역 주변 생활권까지 함께 봐야 합니다.':'정답 승객을 놓쳤습니다. 이미 내릴 준비를 하고 있던 단서를 다시 확인해보세요.');
+  hdr.style.background=ok?'rgba(34,197,94,.05)':'rgba(239,68,68,.05)';
+  hdr.innerHTML=`
+    <div class="res-icon" style="background:${ok?'rgba(34,197,94,.15)':'rgba(239,68,68,.12)'}">
+      <svg viewBox="0 0 24 24" fill="${ok?'#22c55e':'#ef4444'}">
+        ${ok?'<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>':'<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>'}
+      </svg>
+    </div>
+    <div class="res-texts">
+      <div class="res-title" style="color:${ok?'#22c55e':'#ef4444'}">${ok?'자리 확보 성공!':'자리 선점 실패'}</div>
+      <div class="res-sub">${st.name}역 · 정답 ${correct.size}명</div>
+      <div class="res-comment">${resultComment}</div>
+      <div class="res-meta">
+        <span class="meta-pill">관찰 난이도 ${meta.difficulty}</span>
+        <span class="meta-pill">생활권 단서 ${meta.tags.slice(0,2).join(' · ')}</span>
+      </div>
+      <div class="res-nums">
+        <div class="rn"><span class="rn-v" style="color:#22c55e">${hit}</span><span class="rn-l">정답</span></div>
+        <div class="rn"><span class="rn-v" style="color:#f59e0b">${miss.length}</span><span class="rn-l">놓침</span></div>
+        <div class="rn"><span class="rn-v" style="color:#ef4444">${bad}</span><span class="rn-l">오선택</span></div>
+      </div>
+    </div>
+  `;
+
+  // 바디
+  const body=$('res-body'); body.innerHTML='';
+
+  // 역 특성
+  const stCard=document.createElement('div'); stCard.className='station-card';
+  stCard.innerHTML=`<div class="station-name">${st.name}역</div><div class="station-desc">${st.stationDesc}</div><div class="station-tags">${(STATION_META[st.name]?.tags||[]).map(t=>`<span class="station-tag">${t}</span>`).join('')}</div>`;
+  body.appendChild(stCard);
+
+  // 이 역에서 내린 승객
+  const sec1=document.createElement('div');
+  sec1.innerHTML=`<div class="res-section-title" style="margin-bottom:8px">${st.name}역에서 내린 승객</div>`;
+  const cards=document.createElement('div'); cards.className='answer-cards';
+  [...correct].forEach(pid=>{
+    const p=PERSONS.find(x=>x.id===pid);
+    const isSel=selArr.includes(pid);
+    const card=document.createElement('div'); card.className='answer-card';
+    card.style.borderColor=isSel?'#c8e6c9':'#ffe0b2';
+    card.innerHTML=`
+      <img class="ac-img" src="${BASE}${p.front}${V}" alt="${p.name}">
+      <div class="ac-info">
+        <div class="ac-name">${p.name}</div>
+        <div class="ac-reason">${p.desc}</div>
+        <span class="ac-badge ${isSel?'ok':'miss'}">${isSel?'✓ 맞힘':'놓침'}</span>
+      </div>
+    `;
+    cards.appendChild(card);
+  });
+  sec1.appendChild(cards);
+  body.appendChild(sec1);
+
+  // 오선택
+  const wrongPersons=selArr.filter(id=>!correct.has(id)).map(id=>PERSONS.find(p=>p.id===id));
+  if(wrongPersons.length>0){
+    const wsec=document.createElement('div'); wsec.className='wrong-section';
+    wsec.innerHTML=`<div class="wrong-title">잘못 선택한 승객</div>`;
+    wrongPersons.forEach(p=>{
+      const item=document.createElement('div'); item.className='wrong-item';
+      item.innerHTML=`
+        <img class="wrong-img" src="${BASE}${p.front}${V}" alt="${p.name}">
+        <div>
+          <div class="wrong-name">${p.name} <span style="color:#ef4444;font-size:10px">✗ 오선택</span></div>
+          <div class="wrong-reason">${st.name}역에서 내리지 않아요.</div>
+        </div>
+      `;
+      wsec.appendChild(item);
+    });
+    body.appendChild(wsec);
+  }
+
+  // 다음 버튼
+  const btn=$('res-next');
+  const ni=gameIdx+1;
+  if(ok){btn.textContent='오늘 등교 완료!';btn.className='res-next green';btn.onclick=showEnd;}
+  else if(ni<STATIONS.length){btn.textContent=STATIONS[ni].name+'역으로 이동';btn.className='res-next brown';btn.onclick=()=>startRound(ni);}
+  else{btn.textContent='결과 보기';btn.className='res-next brown';btn.onclick=showEnd;}
+
+  showScreen('sc-result');
+}
+
+// 종료
+const ROUTE_TO_SEOKGYE = {
+  '합정':23,'상수':22,'대흥':20,'공덕':18,
+  '삼각지':16,'이태원':14,'신당':9,'월곡':4,'상월곡':3
+};
+
+function showEnd(){
+  let seatedStations=0;
+  let firstSeat='없음';
+  let tried=Object.keys(stationResults).length;
+  for(let i=0;i<STATIONS.length;i++){
+    if(stationResults[STATIONS[i].name]==='success'){
+      seatedStations=ROUTE_TO_SEOKGYE[STATIONS[i].name]||0;
+      firstSeat=STATIONS[i].name+'역';
+      break;
+    }
+  }
+  $('end-num').textContent=seatedStations;
+  let comment='';
+  let type='';
+  if(seatedStations>=20){comment='오늘 하루 개운하게 시작!<br>완벽한 등굣길이었어요.';type='초반 선점형';}
+  else if(seatedStations>=14){comment='그래도 운 좋은 하루.<br>절반 이상은 앉아서 왔네요.';type='균형 관찰형';}
+  else if(seatedStations>=6){comment='다리 마사지 필수.<br>오늘 꽤 서서 왔군요.';type='후반 회복형';}
+  else{comment='내일은 일찍 출발해요.<br>오늘은 거의 서서 왔어요.';type='단서 재검토형';}
+  $('end-comment').innerHTML=`
+    ${comment}
+    <div class="end-report">
+      <div class="end-report-row"><span>첫 자리 확보</span><b>${firstSeat}</b></div>
+      <div class="end-report-row"><span>관찰 성향</span><b>${type}</b></div>
+      <div class="end-report-row"><span>확인한 역</span><b>${tried}개 역</b></div>
+    </div>
+  `;
+  showScreen('sc-end');
+}
+
+$('end-restart').addEventListener('click',()=>{
+  wins=0;
+  firstFail='';
+  cbDone=false;
+  gameIdx=0;
+  selected.clear();
+  Object.keys(stationResults).forEach(k=>delete stationResults[k]);
+
+  $('tag-reader').classList.remove('ready');
+  $('climate-card').classList.remove('tagged','dragging');
+  const msg=$('tag-reader').querySelector('.tag-sound-msg');
+  if(msg) msg.remove();
+
+  $('cb-overlay').classList.remove('gone');
+  $('doors').classList.remove('open');
+
+  setHeader(true);
+  showScreen('sc-start');
+
+  requestAnimationFrame(()=>resetCard(false));
+});
+
+setHeader(true);
+</script>
+</body>
+</html>
